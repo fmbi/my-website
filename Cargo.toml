@@ -1,8 +1,18 @@
 [package]
-name = "my-website"
+name = "web_t3"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+actix-web = "4.2.1"
+actix-rt = "1.1.1"
+sqlx = { version = "0.6.2", features = ["runtime-actix-rustls", "mysql", "macros"] }
+serde = { version = "1.0.145", features = ["derive"] }
+
+[package.metadata.scripts]
+db_create = "bash ./scripts/create_db.sh"
+db_start = "docker start sqlx"
+db_stop = "docker stop sqlx"
+db_remove = "docker rm sqlx"
