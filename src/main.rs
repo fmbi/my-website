@@ -1,5 +1,7 @@
 use actix_web::{App, HttpResponse, HttpServer, web, Error};
 use actix_web::http::StatusCode;
+use serde::{Serialize, Deserialize};
+use sqlx::FromRow;
 use sqlx::mysql::{MySqlPool, MySqlPoolOptions};
 
 async fn home() -> Result<HttpResponse, Error> {
@@ -15,6 +17,24 @@ struct AppState {
     pool: MySqlPool,
 }
 
+#[derive(Serialize, Deserialize)]
+struct Response {
+    message: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, FromRow)]
+struct User {
+    id: i32,
+    username: String,
+    email: String,
+}
+
+#[derive(Serialize, Deserialize)]
+struct UserResponse {
+    user: User,
+    message: String,
+}
+
 async fn root() -> String {
     "Server is up and running".to_string()
 }
@@ -22,38 +42,26 @@ async fn root() -> String {
 async fn get_user(path: web::Path<usize>, app_state: web::Data<AppState>) -> HttpResponse {
     let user_id: usize = path.into_inner();
 
-    //sqlx::query("SELECT"); -> Query
-    
-    //sqlx::query_as(""); -> QueryAs
+    let user: Result<User, sqlx::Error> = sqlx::query_as!(
+        User,
+        "SELECT * FROM users WHERE id = ?",
+        user_id as i32
+        ).fetch_one(&app_state.pool)
+        .await;
 
-    // sqlx::query!()
-    // sqlx::query_as!()
-
-    // .fetch           -> Stream
-    // .fetch_all       -> Vec<T>
-    // .fetch_option    -> Option<T>
-    // .fetch_one       -> T
-    // .execute         -> Database::QueryResult -> MySqlQueryResult
-
-    #[derive(sqlx::FromRow)]
-    struct User {
-        id: i32,
-        username: String,
-        email: String,
+    if user.is_err() {
+        return HttpResponse::BadRequest().json(Response {
+            message: "No user found with given id.".to_string()
+        })
     }
 
-    let user: sqlx::Result<Option<User>> = sqlx::query_as!(
-        User,
-        "SELECT id, username FROM users WHERE id = ?",
-        user_id as u64
-        ).fetch_optional(&app_state).await;
-
-    // user.get("username") -> T
-    // user.try_get() -> Option<Row>
-    ""
+    HttpResponse::Ok().json(UserResponse {
+        user: user.unwrap(),
+        message: "Got user".to_string(),
+    })
 }
 
-#[actix_rt::main]
+#[tokio::main]
 async fn main() -> std::io::Result<()> {
 
     const DATABASE_URL: &str = "mysql://user:password@127.0.0.1:3306/sqlx";

@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 actix-web = "4.2.1"
 actix-rt = "1.1.1"
+tokio = { version = "1.25.0", features = ["full"] }
 sqlx = { version = "0.6.2", features = ["runtime-actix-rustls", "mysql", "macros"] }
 serde = { version = "1.0.145", features = ["derive"] }
 
